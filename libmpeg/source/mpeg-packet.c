@@ -163,7 +163,7 @@ static int mpeg_packet_h264_h265(struct packet_t* pkt, const struct pes_t* pes, 
 
 int pes_packet(struct packet_t* pkt, const struct pes_t* pes, const void* data, size_t size, int start, pes_packet_handler handler, void* param)
 {
-    int r;
+    int r, insert = 0;
     static uint8_t h264aud[] = { 0, 0, 0, 1, 0x09, 0xE0 };
     static uint8_t h265aud[] = { 0, 0, 0, 1, 0x46, 0x01, 0x50 };
     
@@ -177,13 +177,15 @@ int pes_packet(struct packet_t* pkt, const struct pes_t* pes, const void* data, 
             r = PSI_STREAM_H264 == pes->codecid ? mpeg_packet_append(pkt, h264aud, sizeof(h264aud)) : mpeg_packet_append(pkt, h265aud, sizeof(h265aud));
             if (0 != r)
                 return r;
+
+            insert += PSI_STREAM_H264 == pes->codecid ? sizeof(h264aud) : sizeof(h265aud);
         }
 #endif
         r = mpeg_packet_append(pkt, data, size);
         if (0 != r)
             return r;
 
-        return mpeg_packet_h264_h265(pkt, pes, size, handler, param);
+        return mpeg_packet_h264_h265(pkt, pes, size + insert, handler, param);
     }
     else
     {
